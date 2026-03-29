@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ModalVisitante from '../components/ModalVisitante'
 
 export default function Landing() {
   const navigate = useNavigate()
+  const [showModal, setShowModal] = useState(false)
 
   return (
     <>
@@ -73,6 +76,12 @@ export default function Landing() {
         }
       `}</style>
 
+          {showModal && (
+        <ModalVisitante
+          onConfirmar={() => { setShowModal(false); navigate('/consulta') }}
+          onSaltar={() => { setShowModal(false); navigate('/consulta') }}
+        />
+      )}
       <div style={{ minHeight:'100vh', background:'var(--bg)', fontFamily:'DM Sans, sans-serif' }}>
 
         {/* NAV */}
@@ -85,10 +94,7 @@ export default function Landing() {
             </div>
             <span style={{ fontWeight:500, fontSize:'15px', letterSpacing:'-0.01em' }}>NeuroScan AI</span>
           </div>
-          <div style={{ display:'flex', gap:'10px' }}>
-            <button className="btn-ghost" onClick={() => navigate('/login')} style={{ padding:'7px 16px', fontSize:'13px' }}>Iniciar sesión</button>
-            <button className="btn-primary" onClick={() => navigate('/login')} style={{ padding:'7px 16px', fontSize:'13px' }}>Empezar ahora</button>
-          </div>
+          <button className="btn-primary" onClick={() => navigate('/login')} style={{ padding:'7px 16px', fontSize:'13px' }}>Iniciar sesión</button>
         </nav>
 
         {/* HERO */}
@@ -115,7 +121,7 @@ export default function Landing() {
               <button className="btn-primary" onClick={() => navigate('/login')}>
                 Empezar ahora
               </button>
-              <button className="btn-ghost" onClick={() => navigate('/login')}>
+              <button className="btn-ghost" onClick={() => navigate("/consulta")}>
                 Ingresar como visitante →
               </button>
             </div>
