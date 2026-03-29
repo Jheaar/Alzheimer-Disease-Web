@@ -25,8 +25,8 @@ import random
 from pathlib import Path
 
 # ─── Configuración ───────────────────────────
-RAW_DIR   = "raw_dataset"   # donde descomprimiste el ZIP de Kaggle
-OUT_DIR   = "data"          # carpeta de salida para train/val
+RAW_DIR   = r"C:\Users\arnol\Downloads\archive (2)\AugmentedAlzheimerDataset"   # donde descomprimiste el ZIP de Kaggle
+OUT_DIR   = r"C:\Users\arnol\Desktop\Proyectos\Alzheimer Disease Project\alzheimer-model\data"          # carpeta de salida para train/val
 VAL_RATIO = 0.20            # 20% para validación
 SEED      = 42
 # ─────────────────────────────────────────────

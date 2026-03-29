@@ -7,3 +7,4 @@ alzheimer-model/data/
 alzheimer-model/saved_model/alzheimer_resnet50.pth
 training_curves.png
 confusion_matrix.png
+*.pth

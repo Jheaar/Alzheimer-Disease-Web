@@ -1,7 +1,6 @@
 """
-Evaluación del modelo entrenado.
-Lee el mapeo de clases directamente desde class_mapping.json
-para evitar cualquier confusion con el orden de etiquetas.
+Evaluación del modelo VGG16 para clasificación de Alzheimer en MRI
+Lee el mapeo de clases desde class_mapping.json generado por train.py
 """
 
 import torch
@@ -17,32 +16,32 @@ from PIL import Image
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Lee el mapeo real de clases generado durante el entrenamiento
-with open("saved_model/class_mapping.json") as f:
+# Lee el mapeo real generado durante el entrenamiento
+with open("saved_model/class_mapping.json", encoding="utf-8") as f:
     mapping = json.load(f)
 
 CLASS_NAMES = [mapping[str(i)] for i in range(len(mapping))]
-print(f"Clases cargadas desde class_mapping.json: {CLASS_NAMES}")
+print(f"Clases cargadas: {CLASS_NAMES}")
 
 # ─────────────────────────────────────────────
-# CARGAR MODELO
+# CARGAR MODELO VGG16
 # ─────────────────────────────────────────────
-def load_model(weights_path="saved_model/alzheimer_resnet50.pth"):
-    model = models.resnet50(weights=None)
-    in_features = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Dropout(p=0.4),
+def load_model(weights_path="saved_model/alzheimer_vgg16.pth"):
+    model = models.vgg16(weights=None)
+    in_features = model.classifier[6].in_features
+    model.classifier[6] = nn.Sequential(
         nn.Linear(in_features, 256),
         nn.ReLU(),
-        nn.Dropout(p=0.3),
+        nn.Dropout(p=0.4),
         nn.Linear(256, len(CLASS_NAMES)),
     )
     model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
     model.eval()
+    print("Modelo VGG16 cargado correctamente.")
     return model.to(DEVICE)
 
 # ─────────────────────────────────────────────
-# EVALUACIÓN
+# EVALUACIÓN COMPLETA
 # ─────────────────────────────────────────────
 def evaluate(model, data_dir="data/val"):
     transform = transforms.Compose([
@@ -85,7 +84,7 @@ def plot_confusion_matrix(y_true, y_pred, save_path="confusion_matrix.png"):
     print(f"Matriz guardada en: {save_path}")
 
 # ─────────────────────────────────────────────
-# PREDICCIÓN INDIVIDUAL (para el backend)
+# PREDICCIÓN INDIVIDUAL
 # ─────────────────────────────────────────────
 def predict_single(model, image_path):
     transform = transforms.Compose([

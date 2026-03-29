@@ -1,6 +1,7 @@
 """
 Backend FastAPI — Clasificador de Alzheimer en MRI
-Deploy: Hugging Face Spaces (Gradio SDK = Docker)
+Modelo: VGG16
+Deploy: Hugging Face Spaces
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
@@ -11,50 +12,52 @@ import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
 import io
+import json
 
 # ─────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────
-MODEL_PATH  = "C:\\Users\\arnol\\Desktop\\Proyectos\\Alzheimer Disease Project\\alzheimer-model\\saved_model\\alzheimer_resnet50.pth"
-NUM_CLASSES = 4
-DEVICE      = torch.device("cpu")   # HF Spaces free = CPU
+MODEL_PATH   = "C:/Users/arnol/Desktop/Proyectos/Alzheimer Disease Project/alzheimer-model/saved_model/alzheimer_vgg16.pth"
+MAPPING_PATH = "C:/Users/arnol/Desktop/Proyectos/Alzheimer Disease Project/alzheimer-model/saved_model/class_mapping.json"
+DEVICE       = torch.device("cpu")
 
-CLASS_NAMES = [
-    "No Demencia",
-    "Alzheimer Leve",
-    "Alzheimer Moderado",
-    "Alzheimer Avanzado",
-]
+# Cargar mapeo de clases desde el JSON generado por train.py
+with open(MAPPING_PATH, encoding="utf-8") as f:
+    mapping = json.load(f)
+
+CLASS_NAMES = [mapping[str(i)] for i in range(len(mapping))]
+NUM_CLASSES = len(CLASS_NAMES)
+
+print(f"Clases cargadas: {CLASS_NAMES}")
 
 DESCRIPTIONS = {
-    "No Demencia":          "No se detectaron patrones asociados a demencia en la imagen.",
-    "Alzheimer Leve":       "Se detectaron patrones leves. Se recomienda evaluación médica.",
-    "Alzheimer Moderado":   "Se detectaron patrones moderados. Consulta médica urgente.",
-    "Alzheimer Avanzado":   "Se detectaron patrones avanzados. Atención médica inmediata.",
+    "No Demencia":        "No se detectaron patrones asociados a demencia en la imagen.",
+    "Demencia Muy Leve":  "Se detectaron patrones muy leves. Se recomienda seguimiento médico.",
+    "Demencia Leve":      "Se detectaron patrones leves. Se recomienda evaluación médica.",
+    "Demencia Moderada":  "Se detectaron patrones moderados. Consulta médica urgente.",
 }
 
 # ─────────────────────────────────────────────
-# CARGAR MODELO AL INICIAR
+# CARGAR MODELO VGG16
 # ─────────────────────────────────────────────
 def load_model() -> nn.Module:
-    model = models.resnet50(weights=None)
-    in_features = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Dropout(p=0.4),
+    model = models.vgg16(weights=None)
+    in_features = model.classifier[6].in_features
+    model.classifier[6] = nn.Sequential(
         nn.Linear(in_features, 256),
         nn.ReLU(),
-        nn.Dropout(p=0.3),
+        nn.Dropout(p=0.4),
         nn.Linear(256, NUM_CLASSES),
     )
     model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
     model.eval()
-    print("Modelo cargado correctamente.")
+    print("Modelo VGG16 cargado correctamente.")
     return model
 
 model = load_model()
 
 # ─────────────────────────────────────────────
-# TRANSFORMACIÓN DE IMAGEN
+# TRANSFORMACIÓN
 # ─────────────────────────────────────────────
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -68,11 +71,10 @@ transform = transforms.Compose([
 # ─────────────────────────────────────────────
 app = FastAPI(
     title="Alzheimer MRI Classifier",
-    description="API para clasificar imágenes MRI de cerebro y detectar Alzheimer.",
-    version="1.0.0",
+    description="API para clasificar imágenes MRI de cerebro usando VGG16.",
+    version="2.0.0",
 )
 
-# CORS: permite que el frontend en Vercel llame a esta API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -86,13 +88,11 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Alzheimer MRI Classifier API activa."}
-
+    return {"status": "ok", "model": "VGG16", "classes": CLASS_NAMES}
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -104,9 +104,8 @@ async def predict(file: UploadFile = File(...)):
 
     try:
         contents = await file.read()
-        img = Image.open(io.BytesIO(contents)).convert("RGB")
-
-        tensor = transform(img).unsqueeze(0).to(DEVICE)
+        img      = Image.open(io.BytesIO(contents)).convert("RGB")
+        tensor   = transform(img).unsqueeze(0).to(DEVICE)
 
         with torch.no_grad():
             logits = model(tensor)
@@ -124,7 +123,7 @@ async def predict(file: UploadFile = File(...)):
         return JSONResponse({
             "class":         predicted_class,
             "confidence":    confidence,
-            "description":   DESCRIPTIONS[predicted_class],
+            "description":   DESCRIPTIONS.get(predicted_class, ""),
             "probabilities": probabilities,
         })
 
