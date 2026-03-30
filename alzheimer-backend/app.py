@@ -17,8 +17,8 @@ import json
 # ─────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────
-MODEL_PATH   = "C:/Users/arnol/Desktop/Proyectos/Alzheimer Disease Project/alzheimer-model/saved_model/alzheimer_vgg16.pth"
-MAPPING_PATH = "C:/Users/arnol/Desktop/Proyectos/Alzheimer Disease Project/alzheimer-model/saved_model/class_mapping.json"
+MODEL_PATH   = "C:/Users/arnol/Desktop/Proyectos/Alzheimer Disease Project/alzheimer-backend/alzheimer_vgg16.pth"
+MAPPING_PATH = "C:/Users/arnol/Desktop/Proyectos/Alzheimer Disease Project/alzheimer-backend/class_mapping.json"
 DEVICE       = torch.device("cpu")
 
 # Cargar mapeo de clases desde el JSON generado por train.py
